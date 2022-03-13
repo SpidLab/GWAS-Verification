@@ -7,7 +7,7 @@ import argparse
 # chromosome_number = "22" # can be a number between 1-22, X, Y, MT or "NA"-includes all chromosomes
 # sequenced_user_ID = 11
 # user_IDs_file = "Data/userIDs.csv"
-# output_file = "Data/final_mixture_chrm15.csv"
+# output_file = "Data/"
 
 parser = argparse.ArgumentParser(description="Generate dataset")
 parser.add_argument('-i', '--data_path', type=str, help='Path to the directory which contains the users (samples).', required=True)
@@ -152,5 +152,5 @@ if __name__ == "__main__":
     genomic_df = genomic_df.T #transpose
 
     numbered_df = convert_df_to_numbers(genomic_df, case_IDs, control_IDs)
-    numbered_df.to_csv(args.output_file + "dataset.csv")
+    numbered_df.to_csv(args.output_file + "original_dataset_D.csv")
     print(str(args.output_file) + " generated successfully")
