@@ -1,7 +1,7 @@
 # GWAS-Verification
 Description of the project
 
-## Data preprocessing - generate_dataset.py
+## generate_dataset.py
 
 __Required parameters__
 
@@ -40,3 +40,18 @@ Example run
 ```
 >python generate_dataset.py -i "Data/Users/" -c "22" -s 11 -u "Data/userIDs.csv" -o "Data/"
 ```
+
+
+## researcher_operations.py
+
+__Required parameters__
+
+Flag | Description 
+--- | ---
+-p DATASET_PATH |  Path to the directory which contains the users (samples).
+-e EPSILON | Epsilon value
+-k K | Number of SNPs that are provided in the partial noisy dataset
+-l L | Number of SNPs that are provided as part of GWAS statistics
+-f FLAG | Whether to report correct or incorrect statistics
+-u USER_IDS_FILE | Path to the csv files that contains case and control IDs.
+-o OUTPUT_DIR | Directory to save the output files
