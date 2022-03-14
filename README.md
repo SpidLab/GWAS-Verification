@@ -16,7 +16,7 @@ Flag | Description
 
 Example run
 ```
->python preprocess_dataset.py -i "Data/Users/" -u "Data/user_IDs.csv" -o "Data/" -c "22" -s "Data/Users/11"
+python preprocess_dataset.py -i "Data/Users/" -u "Data/user_IDs.csv" -o "Data/" -c "22" -s "Data/Users/11"
 ```
 
 ## researcher_computations.py
@@ -35,7 +35,7 @@ Flag | Description
 
 Example run
 ```
->python researcher_computations.py -i "Data/original_dataset.csv" -e 3 -k 150 -l 100 -s 0 -c "Data/case_control_IDs.csv"  -o "Data/Researcher/"
+python researcher_computations.py -i "Data/original_dataset.csv" -e 3 -k 150 -l 100 -s 0 -c "Data/case_control_IDs.csv"  -o "Data/Researcher/"
 ```
 
 
