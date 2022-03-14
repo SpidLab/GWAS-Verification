@@ -101,24 +101,6 @@ def convert_df_to_numbers(genomic_df):
 
     numbered_df['alt'] = minor_SNPs #a column holding alternate (minor) alleles
     numbered_df['ref'] = major_SNPs #a column holding reference (major) alleles
-
-    # case_aaf = numbered_df[case_IDs]
-    # control_aaf = numbered_df[control_IDs]
-    #
-    # numbered_df['case_0'] = case_aaf.apply(lambda x: (x == 0).sum(), axis=1)
-    # numbered_df['case_1'] = case_aaf.apply(lambda x: (x == 1).sum(), axis=1)
-    # numbered_df['case_2'] = case_aaf.apply(lambda x: (x == 2).sum(), axis=1)
-    # numbered_df['control_0'] = control_aaf.apply(lambda x: (x == 0).sum(), axis=1)
-    # numbered_df['control_1'] = control_aaf.apply(lambda x: (x == 1).sum(), axis=1)
-    # numbered_df['control_2'] = control_aaf.apply(lambda x: (x == 2).sum(), axis=1)
-    #
-    # numbered_df['case_major'] = numbered_df['case_0']
-    # numbered_df['case_minor'] = numbered_df['case_1'] + numbered_df['case_2']
-    # numbered_df['case_minor_counts'] = numbered_df['case_1'] + 2 * numbered_df['case_2']
-    # numbered_df['control_major'] = numbered_df['control_0']
-    # numbered_df['control_minor'] = numbered_df['control_1'] + numbered_df['control_2']
-    # numbered_df['control_minor_counts'] = numbered_df['control_1'] + 2 * numbered_df['control_2']
-
     return  numbered_df
 
 if __name__ == "__main__":

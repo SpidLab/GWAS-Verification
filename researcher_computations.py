@@ -7,18 +7,18 @@ import warnings
 from pandas.core.common import SettingWithCopyWarning
 warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
 
-parser = argparse.ArgumentParser(description="Generate dataset")
-parser.add_argument('-i', '--dataset_dir', type=str, help='Path to the original dataset file', required=True)
+parser = argparse.ArgumentParser(description="Parameters needed on the researcher side")
+parser.add_argument('-i', '--dataset_file', type=str, help='Path to the original dataset file', required=True)
 parser.add_argument('-e', '--epsilon', type=int, help='Privacy parameter.', required=True)
 parser.add_argument('-k', '--k', type=int, help='Number of SNPs that are provided in the partial noisy dataset', required=True)
 parser.add_argument('-l', '--l', type=int, help='Number of SNPs for which GWAS statistics are provided', required=True)
 parser.add_argument('-s', '--shift', type=int, help='The index of SNP that is considered the most associated one. If s = 0, the correct SNPs are provided', required=True)
-parser.add_argument('-c', '--case_control_IDs_file', type=str, help='Path to the csv files that contains case and control IDs', required=True)
+parser.add_argument('-c', '--D_case_control_IDs_file', type=str, help='Path to the csv files that contains case and control IDs', required=True)
 parser.add_argument('-o', '--output_dir', type=str, help='Path to save the output files.', required=True)
 args = parser.parse_args()
 
 def get_user_IDs():
-    with open(args.case_control_IDs_file) as csvfile:
+    with open(args.D_case_control_IDs_file) as csvfile:
         spamreader = csv.reader(csvfile, delimiter=',')
         for index, row in enumerate(spamreader):
             if index == 0:
@@ -79,7 +79,6 @@ def generate_noisy_dataframe(dataframe, user_IDs):
     p = np.exp(args.epsilon) / (np.exp(args.epsilon) + 2)
     q = 1 / (np.exp(args.epsilon) + 2)
     for j in range(len(user_IDs)):
-        # dataframe.loc[:,str(user_IDs[j])] = dataframe.apply(lambda x: randomized_response(x[str(user_IDs[j])], p, q), axis=1)
         dataframe[str(user_IDs[j])] = dataframe.apply(lambda x: randomized_response(x[str(user_IDs[j])], p, q), axis=1)
     return  dataframe
 
@@ -88,10 +87,10 @@ if __name__ == "__main__":
     # Get case user IDs and control user IDs
     case_IDs, control_IDs = get_user_IDs()
     user_IDs = case_IDs + control_IDs
-    print("The total number of samples is: " + str(len(user_IDs)))
+    # print("The total number of samples is: " + str(len(user_IDs)))
 
     # Load dataset D
-    D_df = pd.read_csv(args.dataset_dir, sep =',', index_col=0)
+    D_df = pd.read_csv(args.dataset_file, sep =',', index_col=0)
     D_df = D_df.head(200) #todo remove this line - kept it 200 for testing
     print("Dataset D loaded successfully.")
 
@@ -106,7 +105,6 @@ if __name__ == "__main__":
 
     # pick top k SNPs from sorted_D_GWAS
     sorted_D_df = D_df.reindex(sorted_D_GWAS.index) #reindex the dataframe according to p value
-    print(sorted_D_df)
     noisy_D = generate_noisy_dataframe(sorted_D_df[args.shift:args.shift+args.k], user_IDs) # add noise to only k SNPs
     noisy_D.to_csv(args.output_dir + "noisy_dataset_D.csv")
     print("Generated partial noisy dataset for top " + str(args.k) + " SNPs and " + str(len(user_IDs)) + " users.")
