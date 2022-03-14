@@ -10,7 +10,7 @@ epsilon = 3
 k = 150 # compute noisy D based on K
 l = 100 # provide GWAS for l SNPs
 flag = "Correct"
-user_IDs_file = "Data/userIDs.csv"
+user_IDs_file = "Data/case_control_IDs.csv"
 
 # parser = argparse.ArgumentParser(description="Generate dataset")
 # parser.add_argument('-i', '--data_path', type=str, help='Path to the directory which contains the users (samples).', required=True)

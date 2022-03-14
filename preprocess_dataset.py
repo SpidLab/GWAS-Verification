@@ -2,25 +2,17 @@ import csv
 import pandas as pd
 import argparse
 
-#List of input parameters - previous method
-# data_path = "Data/Users/"
-# chromosome_number = "22" # can be a number between 1-22, X, Y, MT or "NA"-includes all chromosomes
-# sequenced_user_ID = 11
-# user_IDs_file = "Data/userIDs.csv"
-# output_file = "Data/"
-
 parser = argparse.ArgumentParser(description="Generate dataset")
-parser.add_argument('-i', '--data_path', type=str, help='Path to the directory which contains the users (samples).', required=True)
-parser.add_argument('-c', '--chromosome_number', type=str, help='Pick for which chromosome will be extracted the data.', required=True)
-parser.add_argument('-s', '--sequenced_user_ID', type=str, help='Path to the user from which the SNP IDs will be selected.', required=True)
+parser.add_argument('-i', '--data_dir', type=str, help='Path to the directory which contains the users (samples).', required=True)
 parser.add_argument('-u', '--user_IDs_file', type=str, help='Path to the csv files that contains case and control IDs.', required=True)
-parser.add_argument('-o', '--output_file', type=str, help='Path to save the output file.', required=True)
+parser.add_argument('-o', '--output_dir', type=str, help='Path to save the output file.', required=True)
+parser.add_argument('-c', '--chromosome_number', type=str, help='Pick for which chromosome will be extracted the data.', required=False)
+parser.add_argument('-s', '--user_SNPs_file', type=str, help='Path to the user from which the SNP IDs will be selected.', required=False)
 args = parser.parse_args()
 
 def extract_SNPs():
     SNP_list = [] # holds the list of SNPs
-    full_path = args.data_path + str(args.sequenced_user_ID)
-    with open(full_path, "r", encoding="utf8") as tsv:
+    with open(args.user_SNPs_file, "r", encoding="utf8") as tsv:
         for line in csv.reader(tsv, delimiter="\t"):
             if not (line[0].startswith("#")) and len(line) > 2:
                 if args.chromosome_number == "NA":
@@ -34,11 +26,8 @@ def get_user_IDs():
     with open(args.user_IDs_file) as csvfile:
         spamreader = csv.reader(csvfile, delimiter=',')
         for index, row in enumerate(spamreader):
-            if index == 0:
-                case_IDs = row
-            if index == 1:
-                control_IDs = row
-    return case_IDs, control_IDs
+            user_IDs = row
+    return user_IDs
 
 def construct_dataset_from_files(SNP_list, user_IDs):
     file_index = 0  # holds the indexing of which file is being processed
@@ -46,7 +35,7 @@ def construct_dataset_from_files(SNP_list, user_IDs):
 
     for user_ID in user_IDs:  # iterate over each user ID
         print(str(file_index+1) + " out of " + str(len(user_IDs)) + " users are processed")
-        full_path = args.data_path + user_ID
+        full_path = args.data_dir + user_ID
 
         dictionary = {} # holds the allele for each SNP (e.g. dictionary = {'rs3905942': 'GG', ....}
         with open(full_path, "r", encoding="utf8") as tsv:
@@ -71,7 +60,7 @@ def construct_dataset_from_files(SNP_list, user_IDs):
         file_index += 1
     return inverted_dataset
 
-def convert_df_to_numbers(genomic_df, case_IDs, control_IDs):
+def convert_df_to_numbers(genomic_df):
     genomic_df_values = genomic_df.values # gets the values inside the dataframe
     major_SNPs = [] #array that holds the major allele for each SNP
     minor_SNPs = [] #array that holds the minor allele for each SNP
@@ -113,22 +102,22 @@ def convert_df_to_numbers(genomic_df, case_IDs, control_IDs):
     numbered_df['alt'] = minor_SNPs #a column holding alternate (minor) alleles
     numbered_df['ref'] = major_SNPs #a column holding reference (major) alleles
 
-    case_aaf = numbered_df[case_IDs]
-    control_aaf = numbered_df[control_IDs]
-
-    numbered_df['case_0'] = case_aaf.apply(lambda x: (x == 0).sum(), axis=1)
-    numbered_df['case_1'] = case_aaf.apply(lambda x: (x == 1).sum(), axis=1)
-    numbered_df['case_2'] = case_aaf.apply(lambda x: (x == 2).sum(), axis=1)
-    numbered_df['control_0'] = control_aaf.apply(lambda x: (x == 0).sum(), axis=1)
-    numbered_df['control_1'] = control_aaf.apply(lambda x: (x == 1).sum(), axis=1)
-    numbered_df['control_2'] = control_aaf.apply(lambda x: (x == 2).sum(), axis=1)
-
-    numbered_df['case_major'] = numbered_df['case_0']
-    numbered_df['case_minor'] = numbered_df['case_1'] + numbered_df['case_2']
-    numbered_df['case_minor_counts'] = numbered_df['case_1'] + 2 * numbered_df['case_2']
-    numbered_df['control_major'] = numbered_df['control_0']
-    numbered_df['control_minor'] = numbered_df['control_1'] + numbered_df['control_2']
-    numbered_df['control_minor_counts'] = numbered_df['control_1'] + 2 * numbered_df['control_2']
+    # case_aaf = numbered_df[case_IDs]
+    # control_aaf = numbered_df[control_IDs]
+    #
+    # numbered_df['case_0'] = case_aaf.apply(lambda x: (x == 0).sum(), axis=1)
+    # numbered_df['case_1'] = case_aaf.apply(lambda x: (x == 1).sum(), axis=1)
+    # numbered_df['case_2'] = case_aaf.apply(lambda x: (x == 2).sum(), axis=1)
+    # numbered_df['control_0'] = control_aaf.apply(lambda x: (x == 0).sum(), axis=1)
+    # numbered_df['control_1'] = control_aaf.apply(lambda x: (x == 1).sum(), axis=1)
+    # numbered_df['control_2'] = control_aaf.apply(lambda x: (x == 2).sum(), axis=1)
+    #
+    # numbered_df['case_major'] = numbered_df['case_0']
+    # numbered_df['case_minor'] = numbered_df['case_1'] + numbered_df['case_2']
+    # numbered_df['case_minor_counts'] = numbered_df['case_1'] + 2 * numbered_df['case_2']
+    # numbered_df['control_major'] = numbered_df['control_0']
+    # numbered_df['control_minor'] = numbered_df['control_1'] + numbered_df['control_2']
+    # numbered_df['control_minor_counts'] = numbered_df['control_1'] + 2 * numbered_df['control_2']
 
     return  numbered_df
 
@@ -137,9 +126,8 @@ if __name__ == "__main__":
     SNP_list = extract_SNPs()
     print("The total number of SNPs is: " + str(len(SNP_list)))
 
-    # Get case user IDs and control user IDs
-    case_IDs, control_IDs = get_user_IDs()
-    user_IDs = case_IDs + control_IDs
+    # Get user IDs
+    user_IDs = get_user_IDs()
     print("The total number of samples is: " + str(len(user_IDs)))
 
     # Generate the dataset (which is initially inverted) from the user files (samples)
@@ -151,6 +139,6 @@ if __name__ == "__main__":
     genomic_df.index = user_IDs
     genomic_df = genomic_df.T #transpose
 
-    numbered_df = convert_df_to_numbers(genomic_df, case_IDs, control_IDs)
-    numbered_df.to_csv(args.output_file + "original_dataset_D.csv")
-    print(str(args.output_file) + " generated successfully")
+    numbered_df = convert_df_to_numbers(genomic_df)
+    numbered_df.to_csv(args.output_dir + "original_dataset.csv")
+    print(str(args.output_dir) + "original_dataset.csv generated successfully")
