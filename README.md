@@ -30,7 +30,7 @@ Flag | Description
 -k k | Number of SNPs that are provided in the partial noisy dataset
 -l l | Number of SNPs for which GWAS statistics are provided
 -s shift | The index of SNP that is considered the most associated one. If s = 0, the correct SNPs are provided
--c case_control_IDs_file | Path to the csv files that contains case and control IDs
+-c D_case_control_IDs_file | Path to the csv file that contains case and control IDs for dataset D
 -o output_dir | Directory to save the output files
 
 Example run
