@@ -1,0 +1,19 @@
+The total number of samples is: 5
+Dataset D loaded successfully.
+GWAS performed on dataset D.
+Generated GWAS results for top 100 SNPs.
+            1  8  10  ...  control_major  control_minor control_minor_counts
+rs1990485   0  0   0  ...              0              2                    3
+rs4819940   1  0   0  ...              0              2                    3
+rs11703901  1  0   1  ...              2              0                    0
+rs4819554   1  0   0  ...              0              2                    2
+rs9606468   0  1   0  ...              0              2                    2
+...        .. ..  ..  ...            ...            ...                  ...
+rs2385785   0  0   0  ...              2              0                    0
+rs5748748   0  0   0  ...              2              0                    0
+rs5994097   0  0   0  ...              2              0                    0
+rs3827295   0  0   0  ...              2              0                    0
+rs5992629   0  0   0  ...              2              0                    0
+
+[200 rows x 19 columns]
+Generated partial noisy dataset for top 150 SNPs and 5 users.

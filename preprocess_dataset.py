@@ -6,8 +6,8 @@ parser = argparse.ArgumentParser(description="Generate dataset")
 parser.add_argument('-i', '--data_dir', type=str, help='Path to the directory which contains the users (samples).', required=True)
 parser.add_argument('-u', '--user_IDs_file', type=str, help='Path to the csv files that contains case and control IDs.', required=True)
 parser.add_argument('-o', '--output_dir', type=str, help='Path to save the output file.', required=True)
-parser.add_argument('-c', '--chromosome_number', type=str, help='Pick for which chromosome will be extracted the data.', required=False)
-parser.add_argument('-s', '--user_SNPs_file', type=str, help='Path to the user from which the SNP IDs will be selected.', required=False)
+parser.add_argument('-c', '--chromosome_number', type=str, help='Pick for which chromosome will be extracted the data.', required=True)
+parser.add_argument('-s', '--user_SNPs_file', type=str, help='Path to the user from which the SNP IDs will be selected.', required=True)
 args = parser.parse_args()
 
 def extract_SNPs():
