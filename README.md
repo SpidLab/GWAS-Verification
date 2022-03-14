@@ -1,7 +1,7 @@
 # GWAS-Verification
 Description of the project
 
-## generate_dataset.py
+## preprocess_dataset.py
 
 __Required parameters__
 
