@@ -16,7 +16,7 @@ Flag | Description
 
 Example run
 ```
-python preprocess_dataset.py -i "Data/Users/" -u "Data/D_user_IDs.csv" -o "Data/" -c "22" -s "Data/Users/11"
+python preprocess_dataset.py -i "Data/Users/" -u "Data/user_IDs.csv" -o "Data/" -c "22" -s "Data/Users/11"
 ```
 
 ## researcher_computations.py
