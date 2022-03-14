@@ -32,3 +32,9 @@ Flag | Description
 -f FLAG | Whether to report correct or incorrect statistics
 -u USER_IDS_FILE | Path to the csv files that contains case and control IDs.
 -o OUTPUT_DIR | Directory to save the output files
+
+
+
+Notes:
+Add which python version I'm using, along with the version package in requirements.txt file
+Put opensnp link somewhere (https://opensnp.org/phenotypes). 
