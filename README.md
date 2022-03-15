@@ -50,15 +50,15 @@ Flag | Description
 -g D_dataset_GWAS_file |  Path to the GWAS of dataset D file
 -b D_case_control_IDs_file |  Path to the csv file that contains case and control IDs for dataset D
 -e epsilon | Privacy parameter
--t thresholds | Path to the file that contains all the three thresholds
-<!-- -k odds_threshold | Number of SNPs that are provided in the partial noisy dataset
--l maf_threshold | Number of SNPs for which GWAS statistics are provided
--s pval_threshold | The index of SNP that is considered the most associated one. If s = 0, the correct SNPs are provided -->
+-x odds_cut_off | Pre-defined threshold value to classify SNPs as correct or incorrect based on odds ratio
+-y maf_cut_off | Pre-defined threshold value to classify SNPs as correct or incorrect based on MAF
+-z pval_cut_off | Pre-defined threshold value to classify SNPs as correct or incorrect based on p-value
+
 
 
 Example run
 ```
-python verifier_computations.py -i "Data/E_original_dataset.csv" -a "Data/E_case_control_IDs.csv" -n "Data/Researcher/noisy_dataset_D.csv" -g "Data/Researcher/D_GWAS.csv" -b "Data/D_case_control_IDs.csv" -e 3 -t "Data/thresholds.csv"
+python verifier_computations.py -i "Data/E_original_dataset.csv" -a "Data/E_case_control_IDs.csv" -n "Data/Researcher/noisy_dataset_D.csv" -g "Data/Researcher/D_GWAS.csv" -b "Data/D_case_control_IDs.csv" -e 3 -x 0.8 -y 0.00001 -z 0.5
 ```
 
 
