@@ -99,12 +99,14 @@ if __name__ == "__main__":
     print("GWAS performed on dataset D.")
 
     sorted_D_GWAS = D_GWAS.sort_values(by='p_val', ascending=True) #sort according to p value in ascending order
+    original_SNPs = sorted_D_GWAS.index[0:args.l] #keep track of the original SNP IDs, we only shift the values
     shared_D_GWAS = sorted_D_GWAS[args.shift:args.shift + args.l] #pick the top l SNPs
+    shared_D_GWAS.index = original_SNPs #reassign the original IDs, but with other statistics
     shared_D_GWAS.to_csv(args.output_dir + "D_GWAS.csv")
     print("Generated GWAS results for top " + str(args.l) + " SNPs.")
 
     # pick top k SNPs from sorted_D_GWAS
     sorted_D_df = D_df.reindex(sorted_D_GWAS.index) #reindex the dataframe according to p value
-    noisy_D = generate_noisy_dataframe(sorted_D_df[args.shift:args.shift+args.k], user_IDs) # add noise to only k SNPs
+    noisy_D = generate_noisy_dataframe(sorted_D_df[0:0+args.k], user_IDs) # add noise to only k SNPs
     noisy_D.to_csv(args.output_dir + "noisy_dataset_D.csv")
     print("Generated partial noisy dataset for top " + str(args.k) + " SNPs and " + str(len(user_IDs)) + " users.")
