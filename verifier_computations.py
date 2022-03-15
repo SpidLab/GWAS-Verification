@@ -3,32 +3,22 @@ import pandas as pd
 import argparse
 import statsmodels.api as sm
 import numpy as np
+import math
 import warnings
 from pandas.core.common import SettingWithCopyWarning
 warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
 
-# parser = argparse.ArgumentParser(description="Parameters needed on the researcher side")
-# parser.add_argument('-i', '--dataset_dir', type=str, help='Path to the original dataset file', required=True)
-# parser.add_argument('-e', '--epsilon', type=int, help='Privacy parameter.', required=True)
-# parser.add_argument('-k', '--k', type=int, help='Number of SNPs that are provided in the partial noisy dataset', required=True)
-# parser.add_argument('-l', '--l', type=int, help='Number of SNPs for which GWAS statistics are provided', required=True)
-# parser.add_argument('-s', '--shift', type=int, help='The index of SNP that is considered the most associated one. If s = 0, the correct SNPs are provided', required=True)
-# parser.add_argument('-c', '--case_control_IDs_file', type=str, help='Path to the csv files that contains case and control IDs', required=True)
-# parser.add_argument('-o', '--output_dir', type=str, help='Path to save the output files.', required=True)
-# args = parser.parse_args()
-
-#parameters
-dataset_file = "Data/E_original_dataset.csv"
-E_case_control_IDs_file = "Data/E_case_control_IDs.csv"
-noisy_dataset_file = "Data/Researcher/noisy_dataset_D.csv"
-D_dataset_GWAS_file = "Data/Researcher/D_GWAS.csv"
-D_case_control_IDs_file = "Data/D_case_control_IDs.csv"
-epsilon = 3
-odds_threshold = 1.1
-maf_threshold = 1.2
-pval_threshold = 1.3
-#todo change thresholds to a file
-#output_dir = "Data/Verifier/"
+parser = argparse.ArgumentParser(description="Parameters needed on the researcher side")
+parser.add_argument('-i', '--dataset_file', type=str, help='Path to the original dataset file (E)', required=True)
+parser.add_argument('-a', '--E_case_control_IDs_file', type=str, help='Path to the csv file that contains case and control IDs for dataset E', required=True)
+parser.add_argument('-n', '--noisy_dataset_file', type=str, help='Path to the partial noisy dataset (D_k^e)', required=True)
+parser.add_argument('-g', '--D_dataset_GWAS_file', type=str, help='Path to the GWAS of dataset D file', required=True)
+parser.add_argument('-b', '--D_case_control_IDs_file', type=str, help='Path to the csv file that contains case and control IDs for dataset D', required=True)
+parser.add_argument('-e', '--epsilon', type=int, help='Privacy parameter', required=True)
+parser.add_argument('-x', '--odds_cut_off', type=float, help='Pre-defined threshold value to classify SNPs as correct or incorrect based on odds ratio', required=True)
+parser.add_argument('-y', '--maf_cut_off', type=float, help='Pre-defined threshold value to classify SNPs as correct or incorrect based on MAF', required=True)
+parser.add_argument('-z', '--pval_cut_off', type=float, help='Pre-defined threshold value to classify SNPs as correct or incorrect based on p-value', required=True)
+args = parser.parse_args()
 
 def get_user_IDs(case_control_IDs_file):
     with open(case_control_IDs_file) as csvfile:
@@ -47,8 +37,8 @@ def compute_statistics(a, b, c, d):
     return pd.Series(["%.8f" % table.oddsratio, "%.8f" % low_interval, "%.8f" % high_interval, "%.8f" % table.log_oddsratio_se, "%.8f" % table.log_oddsratio_pvalue()],  index=column_names)
 
 def estimate_value(dataframe, state):
-    p = np.exp(epsilon) / (np.exp(epsilon) + 2)
-    q = 1 / (np.exp(epsilon) + 2)
+    p = np.exp(args.epsilon) / (np.exp(args.epsilon) + 2)
+    q = 1 / (np.exp(args.epsilon) + 2)
     n = len(dataframe.columns)
     if (p != q):
         ci = dataframe.apply(lambda x: (x == state).sum(), axis=1)
@@ -110,30 +100,82 @@ def randomized_response(val, p, q):
     return new_val
 
 def generate_noisy_dataframe(dataframe, user_IDs):
-    p = np.exp(epsilon) / (np.exp(epsilon) + 2)
-    q = 1 / (np.exp(epsilon) + 2)
+    p = np.exp(args.epsilon) / (np.exp(args.epsilon) + 2)
+    q = 1 / (np.exp(args.epsilon) + 2)
     for j in range(len(user_IDs)):
         dataframe[str(user_IDs[j])] = dataframe.apply(lambda x: randomized_response(x[str(user_IDs[j])], p, q), axis=1)
     return  dataframe
 
+def compute_relative_error(original_df, noisy_df, SNP_list):
+    column_names = ['odds_ratio', 'MAF', 'p_val']
+    RE_df = pd.DataFrame(columns=column_names)
+    for SNP in SNP_list:
+        odds_RE = MAF_RE = p_val_RE = 0.0000001
+        if float(original_df.at[SNP, 'odds_ratio']) != 0:
+            odds_RE = abs(float(original_df.at[SNP, 'odds_ratio']) - float(noisy_df.at[SNP, 'odds_ratio'])) / float(original_df.at[SNP, 'odds_ratio'])
+        if float(original_df.at[SNP, 'MAF']) != 0:
+            MAF_RE = abs(float(original_df.at[SNP, 'MAF']) - float(noisy_df.at[SNP, 'MAF'])) / float(original_df.at[SNP, 'MAF'])
+        original_log_pval = -1*math.log(float(original_df.at[SNP, 'p_val']))
+        noisy_log_pval = -1*math.log(float(noisy_df.at[SNP, 'p_val']))
+        if original_log_pval != 0:
+            p_val_RE = abs(original_log_pval-noisy_log_pval)/ original_log_pval
+        RE_to_append = {"odds_ratio": odds_RE, 'MAF': MAF_RE, 'p_val': p_val_RE}
+        RE_df = RE_df.append(RE_to_append, ignore_index=True)
+    RE_df.index = SNP_list
+    return RE_df
+
+def compute_error(D_RE, E_RE, SNP_list):
+    column_names = ['odds_ratio', 'MAF', 'p_val']
+    error_df = pd.DataFrame(columns=column_names)
+    for SNP in SNP_list:
+        odds_error = MAF_error = p_val_error = 0.0000001
+        if E_RE.at[SNP, 'odds_ratio'] != 0:
+            odds_error = abs(float(D_RE.at[SNP, 'odds_ratio']) - float(E_RE.at[SNP, 'odds_ratio'])) /  float(E_RE.at[SNP, 'odds_ratio'])
+        if E_RE.at[SNP, 'MAF'] != 0:
+            MAF_error = abs(float(D_RE.at[SNP, 'MAF']) - float(E_RE.at[SNP, 'MAF'])) /  float(E_RE.at[SNP, 'MAF'])
+        if E_RE.at[SNP, 'p_val'] != 0:
+            p_val_error = abs(float(D_RE.at[SNP, 'p_val']) - float(E_RE.at[SNP, 'p_val'])) /  float(E_RE.at[SNP, 'p_val'])
+
+        error_to_append = {"odds_ratio": odds_error, 'MAF': MAF_error, 'p_val': p_val_error}
+        error_df = error_df.append(error_to_append, ignore_index=True)
+    error_df.index = SNP_list
+    return error_df
+
+def check_correctness(error_df):
+    # Select column odds_ratio from the dataframe
+    odds_column = error_df["odds_ratio"]
+    odds_correct = odds_column[odds_column < args.odds_cut_off].count()
+    odds_incorrect = len(error_df.index) - odds_correct
+    print("Odds ratio results: " + str(odds_correct) + " are correct and " + str(odds_incorrect) +" are incorrect.")
+
+    maf_column = error_df["MAF"]
+    maf_correct = maf_column[maf_column < args.maf_cut_off].count()
+    maf_incorrect = len(error_df.index) - maf_correct
+    print("MAF results: " + str(maf_correct) + " are correct and " + str(maf_incorrect) +" are incorrect.")
+
+    pval_column = error_df["p_val"]
+    pval_correct = pval_column[pval_column < args.pval_cut_off].count()
+    pval_incorrect = len(error_df.index) - pval_correct
+    print("p-value results: " + str(pval_correct) + " are correct and " + str(pval_incorrect) +" are incorrect.")
 
 if __name__ == "__main__":
     # Get case user IDs and control user IDs of dataset D
-    D_case_IDs, D_control_IDs = get_user_IDs(D_case_control_IDs_file)
+    D_case_IDs, D_control_IDs = get_user_IDs(args.D_case_control_IDs_file)
     D_user_IDs = D_case_IDs + D_control_IDs
 
     # Get case user IDs and control user IDs of dataset E
-    E_case_IDs, E_control_IDs = get_user_IDs(E_case_control_IDs_file)
+    E_case_IDs, E_control_IDs = get_user_IDs(args.E_case_control_IDs_file)
     E_user_IDs = E_case_IDs + E_control_IDs
 
     # Load GWAS of dataset D
-    D_GWAS = pd.read_csv(D_dataset_GWAS_file, sep=',', index_col=0)
+    D_GWAS = pd.read_csv(args.D_dataset_GWAS_file, sep=',', index_col=0)
+    SNP_list = D_GWAS.index
     print("GWAS of dataset D loaded successfully.")
 
     # Load partial noisy dataset D
-    D_noisy_df = pd.read_csv(noisy_dataset_file, sep =',', index_col=0)
-    D_noisy_df = D_noisy_df[D_noisy_df.index.isin(D_GWAS.index)] # get only the SNPs that are provided in GWAS stats
-    D_noisy_df = D_noisy_df.reindex(D_GWAS.index)
+    D_noisy_df = pd.read_csv(args.noisy_dataset_file, sep =',', index_col=0)
+    D_noisy_df = D_noisy_df[D_noisy_df.index.isin(SNP_list)] # get only the SNPs that are provided in GWAS stats
+    D_noisy_df = D_noisy_df.reindex(SNP_list)
     print("Noisy dataset D loaded successfully.")
 
     # Perform GWAS on noisy dataset D using aggreagation
@@ -141,12 +183,12 @@ if __name__ == "__main__":
     print("GWAS performed on noisy dataset D.")
 
     # Load dataset E
-    E_df = pd.read_csv(dataset_file, sep=',', index_col=0)
+    E_df = pd.read_csv(args.dataset_file, sep=',', index_col=0)
     print("Dataset E loaded successfully.")
 
     # Truncate E by selecting only the SNPs that are provided in GWAS of D
-    E_df = E_df[E_df.index.isin(D_GWAS.index)]
-    E_df = E_df.reindex(D_GWAS.index)
+    E_df = E_df[E_df.index.isin(SNP_list)]
+    E_df = E_df.reindex(SNP_list)
 
     # Perform GWAS on the original dataset E
     E_GWAS = perform_GWAS(E_df, E_case_IDs, E_control_IDs, False)
@@ -158,12 +200,12 @@ if __name__ == "__main__":
     # Perform GWAS on noisy dataset E using aggreagation
     E_noisy_GWAS = perform_GWAS(E_noisy_df, E_case_IDs, E_control_IDs, True)
 
-    # Include the code that computes RE
-    # maf_error = []
-    # mre_or_error = []
-    # pval_error = []
-    # for k in range(end_snp):
-    #     maf_error.append(abs(or_stats.aaf.iloc[k] - noisy_mix_res.aaf.iloc[k]) / or_stats.aaf.iloc[k])
-    #     mre_or_error.append(
-    #         abs(or_stats.odds_ratio.iloc[k] - noisy_mix_res.odds_ratio.iloc[k]) / or_stats.odds_ratio.iloc[k])
-    #     pval_error.append(abs(or_stats.log_pval.iloc[k] - noisy_mix_res.log_pval.iloc[k]) / or_stats.log_pval.iloc[k])
+    # Compute the deviation - relative error(RE) for each of the statistics of dataset D, E and store in dataframes D_RE and E_RE respectively
+    D_RE = compute_relative_error(D_GWAS, D_noisy_GWAS, SNP_list)
+    E_RE = compute_relative_error(E_GWAS, E_noisy_GWAS, SNP_list)
+
+    # Compute the error between deviations
+    error_df = compute_error(D_RE, E_RE, SNP_list)
+
+    #compute the correctness of the SNPs statistics based on the thresholds
+    check_correctness(error_df)

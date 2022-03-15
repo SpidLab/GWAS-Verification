@@ -9,7 +9,7 @@ warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
 
 parser = argparse.ArgumentParser(description="Parameters needed on the researcher side")
 parser.add_argument('-i', '--dataset_file', type=str, help='Path to the original dataset file', required=True)
-parser.add_argument('-e', '--epsilon', type=int, help='Privacy parameter.', required=True)
+parser.add_argument('-e', '--epsilon', type=int, help='Privacy parameter', required=True)
 parser.add_argument('-k', '--k', type=int, help='Number of SNPs that are provided in the partial noisy dataset', required=True)
 parser.add_argument('-l', '--l', type=int, help='Number of SNPs for which GWAS statistics are provided', required=True)
 parser.add_argument('-s', '--shift', type=int, help='The index of SNP that is considered the most associated one. If s = 0, the correct SNPs are provided', required=True)
