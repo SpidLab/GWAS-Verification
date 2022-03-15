@@ -25,7 +25,7 @@ __Required parameters__
 
 Flag | Description 
 --- | ---
--i dataset_file |  Path to the original dataset file (D)
+-i dataset_file |  Path to the original dataset file (D) | D<sup>ε</sup>
 -e epsilon | Privacy parameter
 -k k | Number of SNPs that are provided in the partial noisy dataset
 -l l | Number of SNPs for which GWAS statistics are provided
@@ -43,7 +43,7 @@ python researcher_computations.py -i "Data/D_original_dataset.csv" -e 3 -k 150 -
 __Required parameters__
 
 Flag | Description 
---- | ---
+--- | --- 
 -i dataset_file |  Path to the original dataset file (E)
 -a E_case_control_IDs_file |  Path to the csv file that contains case and control IDs for dataset E
 -n noisy_dataset_file |  Path to the partial noisy dataset (D_k^e)
@@ -53,12 +53,13 @@ Flag | Description
 -x odds_cut_off | Pre-defined threshold value to classify SNPs as correct or incorrect based on odds ratio
 -y maf_cut_off | Pre-defined threshold value to classify SNPs as correct or incorrect based on MAF
 -z pval_cut_off | Pre-defined threshold value to classify SNPs as correct or incorrect based on p-value
+-o output_dir | Directory to save the output files
 
 
 
 Example run
 ```
-python verifier_computations.py -i "Data/E_original_dataset.csv" -a "Data/E_case_control_IDs.csv" -n "Data/Researcher/noisy_dataset_D.csv" -g "Data/Researcher/D_GWAS.csv" -b "Data/D_case_control_IDs.csv" -e 3 -x 0.8 -y 0.00001 -z 0.5
+python verifier_computations.py -i "Data/E_original_dataset.csv" -a "Data/E_case_control_IDs.csv" -n "Data/Researcher/noisy_dataset_D.csv" -g "Data/Researcher/D_GWAS.csv" -b "Data/D_case_control_IDs.csv" -e 3 -x 0.8 -y 0.00001 -z 0.5 -o "Data/Verifier/"
 ```
 
 
