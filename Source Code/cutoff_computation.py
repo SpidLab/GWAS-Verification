@@ -9,27 +9,16 @@ from pandas.core.common import SettingWithCopyWarning
 warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
 
 parser = argparse.ArgumentParser(description="Parameters needed on the researcher side")
-parser.add_argument('-i', '--dataset_file', type=str, help='Path to the original dataset file (E)', required=True)
 parser.add_argument('-a', '--E_case_control_IDs_file', type=str, help='Path to the csv file that contains case and control IDs for dataset E', required=True)
 parser.add_argument('-b', '--F_case_control_IDs_file', type=str, help='Path to the csv file that contains case and control IDs for dataset F', required=True)
-parser.add_argument('-c', '--E_dataset_file', type=int, help='Path to the csv file that contains dataset E', required=True)
-parser.add_argument('-d', '--F_dataset_file', type=int, help='Path to the csv file that contains dataset F', required=True)
+parser.add_argument('-c', '--E_dataset_file', type=str, help='Path to the csv file that contains dataset E', required=True)
+parser.add_argument('-d', '--F_dataset_file', type=str, help='Path to the csv file that contains dataset F', required=True)
 parser.add_argument('-e', '--epsilon', type=int, help='Privacy parameter', required=True)
-parser.add_argument('-s', '--shift', type=int, help='The index of SNP that is considered the most associated one. If s = 0, the correct SNPs are provided', required=True)
-parser.add_argument('-l', '--l', type=int, help='Number of SNPs for which GWAS statistics are computed', required=True)
+parser.add_argument('-s', '--shift', type=int, help='Determines the starting point for which the SNPs statistics are provided', required=True)
+parser.add_argument('-l', '--l', type=int, help='Number of SNPs for which GWAS statistics are provided', required=True)
 parser.add_argument('-n', '--nr_splits', type=int, help='Plot parameter to define number of split on the x-axis', required=True)
 #If sufficient data is generated, increase nr_splits as it provides more accurate cutoff points
 args = parser.parse_args()
-
-F_case_control_IDs_file = "Data/F_case_control_IDs.csv"
-E_case_control_IDs_file = "Data/E_case_control_IDs.csv"
-F_dataset_file = "Data/F_original_dataset.csv"
-E_dataset_file = "Data/E_original_dataset.csv"
-epsilon = 3
-shift = 0
-l = 100
-nr_splits = 10
-
 
 def get_user_IDs(case_control_IDs_file):
     with open(case_control_IDs_file) as csvfile:
@@ -48,8 +37,8 @@ def compute_statistics(a, b, c, d):
     return pd.Series(["%.8f" % table.oddsratio, "%.8f" % low_interval, "%.8f" % high_interval, "%.8f" % table.log_oddsratio_se, "%.8f" % table.log_oddsratio_pvalue()],  index=column_names)
 
 def estimate_value(dataframe, state):
-    p = np.exp(epsilon) / (np.exp(epsilon) + 2)
-    q = 1 / (np.exp(epsilon) + 2)
+    p = np.exp(args.epsilon) / (np.exp(args.epsilon) + 2)
+    q = 1 / (np.exp(args.epsilon) + 2)
     n = len(dataframe.columns)
     if (p != q):
         ci = dataframe.apply(lambda x: (x == state).sum(), axis=1)
@@ -111,8 +100,8 @@ def randomized_response(val, p, q):
     return new_val
 
 def generate_noisy_dataframe(dataframe, user_IDs):
-    p = np.exp(epsilon) / (np.exp(epsilon) + 2)
-    q = 1 / (np.exp(epsilon) + 2)
+    p = np.exp(args.epsilon) / (np.exp(args.epsilon) + 2)
+    q = 1 / (np.exp(args.epsilon) + 2)
     for j in range(len(user_IDs)):
         dataframe[str(user_IDs[j])] = dataframe.apply(lambda x: randomized_response(x[str(user_IDs[j])], p, q), axis=1)
     return  dataframe
@@ -153,12 +142,12 @@ def compute_error(D_RE, E_RE, SNP_list):
     return error_df
 
 def generate_matlab_lines(pval_array):
-    xaxis = []
-    yaxis = []
+    xaxis = [] #  holds the probability distributions indexes
+    yaxis = [] # holds the probability distributions values
     sum = 0
     max_val = math.ceil(max(pval_array))
     min_val = math.floor(min(pval_array))
-    step = (max_val - min_val) / nr_splits
+    step = (max_val - min_val) / args.nr_splits
     for i in np.arange(min_val, max_val, step):
         xaxis.append(i)
         y = len([j for j in pval_array if j < i])
@@ -170,7 +159,7 @@ def generate_matlab_lines(pval_array):
     for i in xaxis:
         file.write(str(i) + " ")
     file.close()
-    if (shift == 0):
+    if (args.shift == 0):
         variable_name = "correct.txt"
     else:
         variable_name = "incorrect.txt"
@@ -182,15 +171,15 @@ def generate_matlab_lines(pval_array):
 
 if __name__ == "__main__":
     # Get case user IDs and control user IDs of dataset F
-    F_case_IDs, F_control_IDs = get_user_IDs(F_case_control_IDs_file)
+    F_case_IDs, F_control_IDs = get_user_IDs(args.F_case_control_IDs_file)
     F_user_IDs = F_case_IDs + F_control_IDs
 
     # Get case user IDs and control user IDs of dataset E
-    E_case_IDs, E_control_IDs = get_user_IDs(E_case_control_IDs_file)
+    E_case_IDs, E_control_IDs = get_user_IDs(args.E_case_control_IDs_file)
     E_user_IDs = E_case_IDs + E_control_IDs
 
     # Load dataset F
-    F_df = pd.read_csv(F_dataset_file, sep=',', index_col=0)
+    F_df = pd.read_csv(args.F_dataset_file, sep=',', index_col=0)
     print("Dataset F loaded successfully.")
 
     # Perform GWAS on dataset F
@@ -199,8 +188,8 @@ if __name__ == "__main__":
 
     # Sort according to p-value
     F_GWAS = F_GWAS.sort_values(by='p_val', ascending=True)  # sort according to p value in ascending order
-    original_SNPs = F_GWAS.index[0:l]  # keep track of the original SNP IDs, we only shift the values
-    F_GWAS = F_GWAS[shift:shift + l]  # pick the top l SNPs
+    original_SNPs = F_GWAS.index[0:args.l]  # keep track of the original SNP IDs, we only shift the values
+    F_GWAS = F_GWAS[args.shift:args.shift + args.l]  # pick the top l SNPs
     F_GWAS.index = original_SNPs  # reassign the original IDs, but with other statistics
     print("GWAS performed on dataset E.")
     SNP_list = F_GWAS.index
@@ -217,18 +206,18 @@ if __name__ == "__main__":
 
 
     # Load dataset E
-    E_df = pd.read_csv(E_dataset_file, sep=',', index_col=0)
+    E_df = pd.read_csv(args.E_dataset_file, sep=',', index_col=0)
     print("Dataset E loaded successfully.")
 
     # Perform GWAS on the original dataset E
     E_GWAS = perform_GWAS(E_df, E_case_IDs, E_control_IDs, False)
     sorted_E_GWAS = E_GWAS.sort_values(by='p_val', ascending=True)  # sort according to p value in ascending order
-    E_GWAS = sorted_E_GWAS[0:l]
+    E_GWAS = sorted_E_GWAS[0:args.l]
     print("GWAS performed on dataset E.")
 
     # Add noise to E
     E_df = E_df.reindex(E_GWAS.index)  # reindex the dataframe according to p value
-    E_noisy_df = generate_noisy_dataframe(E_df[0:0 + l], E_user_IDs)
+    E_noisy_df = generate_noisy_dataframe(E_df[0:0 + args.l], E_user_IDs)
 
     # Perform GWAS on noisy dataset E without using aggreagation
     E_noisy_GWAS = perform_GWAS(E_noisy_df, E_case_IDs, E_control_IDs, False)
@@ -243,6 +232,7 @@ if __name__ == "__main__":
 
     pval_array = error_df['p_val'].tolist()
     generate_matlab_lines(pval_array)
-    print(pval_array)
+    print("Line coordinates sent to MATLAB.")
+    # print(pval_array)
 
     #Similarly, we can compute the cutoff point for odds ratio and MAF
