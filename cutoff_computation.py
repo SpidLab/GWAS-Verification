@@ -116,8 +116,6 @@ def generate_noisy_dataframe(dataframe, user_IDs):
     return  dataframe
 
 def compute_relative_error(original_df, noisy_df, SNP_list):
-    print(original_df)
-    print(noisy_df)
     column_names = ['odds_ratio', 'MAF', 'p_val']
     RE_df = pd.DataFrame(columns=column_names)
     for SNP in SNP_list:
@@ -138,14 +136,14 @@ def compute_relative_error(original_df, noisy_df, SNP_list):
 def compute_error(D_RE, E_RE, SNP_list):
     column_names = ['odds_ratio', 'MAF', 'p_val']
     error_df = pd.DataFrame(columns=column_names)
-    for SNP in SNP_list:
+    for i in range(len(SNP_list)):
         odds_error = MAF_error = p_val_error = 0.0000001
-        if E_RE.at[SNP, 'odds_ratio'] != 0:
-            odds_error = abs(float(D_RE.at[SNP, 'odds_ratio']) - float(E_RE.at[SNP, 'odds_ratio'])) /  float(E_RE.at[SNP, 'odds_ratio'])
-        if E_RE.at[SNP, 'MAF'] != 0:
-            MAF_error = abs(float(D_RE.at[SNP, 'MAF']) - float(E_RE.at[SNP, 'MAF'])) /  float(E_RE.at[SNP, 'MAF'])
-        if E_RE.at[SNP, 'p_val'] != 0:
-            p_val_error = abs(float(D_RE.at[SNP, 'p_val']) - float(E_RE.at[SNP, 'p_val'])) /  float(E_RE.at[SNP, 'p_val'])
+        if E_RE.iat[i, 0] != 0:
+            odds_error = abs(float(D_RE.iat[i, 0]) - float(E_RE.iat[i, 0])) /  float(E_RE.iat[i, 0])
+        if E_RE.iat[i, 1] != 0:
+            MAF_error = abs(float(D_RE.iat[i, 1]) - float(E_RE.iat[i, 1])) /  float(E_RE.iat[i, 1])
+        if E_RE.iat[i, 2] != 0:
+            p_val_error = abs(float(D_RE.iat[i, 2]) - float(E_RE.iat[i, 2])) /  float(E_RE.iat[i, 2])
 
         error_to_append = {"odds_ratio": odds_error, 'MAF': MAF_error, 'p_val': p_val_error}
         error_df = error_df.append(error_to_append, ignore_index=True)
@@ -192,49 +190,52 @@ if __name__ == "__main__":
     E_df = pd.read_csv(E_dataset_file, sep=',', index_col=0)
     print("Dataset E loaded successfully.")
 
-    # Truncate E by selecting only the SNPs that are provided in F
-    E_df = E_df[E_df.index.isin(SNP_list)]
-    E_df = E_df.reindex(SNP_list)
-
     # Perform GWAS on the original dataset E
     E_GWAS = perform_GWAS(E_df, E_case_IDs, E_control_IDs, False)
+    sorted_E_GWAS = E_GWAS.sort_values(by='p_val', ascending=True)  # sort according to p value in ascending order
+    E_GWAS = sorted_E_GWAS[0:l]
     print("GWAS performed on dataset E.")
 
     # Add noise to E
-    E_noisy_df = generate_noisy_dataframe(E_df, E_user_IDs)
+    E_df = E_df.reindex(E_GWAS.index)  # reindex the dataframe according to p value
+    E_noisy_df = generate_noisy_dataframe(E_df[0:0 + l], E_user_IDs)
 
     # Perform GWAS on noisy dataset E without using aggreagation
     E_noisy_GWAS = perform_GWAS(E_noisy_df, E_case_IDs, E_control_IDs, False)
 
     # Compute the deviation - relative error(RE) for each of the statistics of dataset D, E and store in dataframes D_RE and E_RE respectively
     F_RE = compute_relative_error(F_GWAS, F_noisy_GWAS, SNP_list)
-    E_RE = compute_relative_error(E_GWAS, E_noisy_GWAS, SNP_list)
+    E_SNP_list = E_GWAS.index
+    E_RE = compute_relative_error(E_GWAS, E_noisy_GWAS, E_SNP_list)
 
     # Compute the error between deviations
     error_df = compute_error(F_RE, E_RE, SNP_list)
     print(error_df)
 
-    xaxis = []
-    yaxis = []
-    sum = 0
-    for x in range(1, 501, 30):
-        x = x / 100.0
-        xaxis.append(x)
-        # y = data[data['odd_ratio_error'] < x]['odd_ratio_error'].count()
-        # y = data[data['p_val_sum_error'] < x]['p_val_sum_error'].count()
-        y = error_df[error_df['maf_error'] < x]['maf_error'].count()
-        diff = y - sum
-        sum = y
-        yaxis.append(diff / error_df['start_snp'].count())
+    pval_array = error_df['p_val'].tolist()
+    print(pval_array)
 
-    directory = r'C:\Users\leona\Documents\MATLAB\index.txt'
-    file1 = open(directory, "w")
-    for x in xaxis:
-        file1.write(str(x) + " ")
-    file1.close()
-
-    directory = r'C:\Users\leona\Documents\MATLAB\correct.txt'
-    file1 = open(directory, "w")
-    for y in yaxis:
-        file1.write(str(y) + " ")
-    file1.close()
+    # xaxis = []
+    # yaxis = []
+    # sum = 0
+    # for x in range(1, 501, 30):
+    #     x = x / 100.0
+    #     xaxis.append(x)
+    #     # y = data[data['odd_ratio_error'] < x]['odd_ratio_error'].count()
+    #     # y = data[data['p_val_sum_error'] < x]['p_val_sum_error'].count()
+    #     y = error_df[error_df['maf_error'] < x]['maf_error'].count()
+    #     diff = y - sum
+    #     sum = y
+    #     yaxis.append(diff / error_df['start_snp'].count())
+    #
+    # directory = r'C:\Users\leona\Documents\MATLAB\index.txt'
+    # file1 = open(directory, "w")
+    # for x in xaxis:
+    #     file1.write(str(x) + " ")
+    # file1.close()
+    #
+    # directory = r'C:\Users\leona\Documents\MATLAB\correct.txt'
+    # file1 = open(directory, "w")
+    # for y in yaxis:
+    #     file1.write(str(y) + " ")
+    # file1.close()
