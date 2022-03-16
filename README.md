@@ -1,5 +1,8 @@
 # GWAS-Verification
-Description of the project
+The source code is an artifact of the paper "Privacy-Preserving and Efficient Verification of the Outcome in Genome-Wide Association Studies" which can be accessed in https://arxiv.org/abs/2101.08879. 
+
+In the paper we used different phenotypes of openSNP data, which are not provided due to privacy policies. Nevertheless, they can be crawled from https://opensnp.org/phenotypes. After gathering the data, one may use *preprocess_dataset.py* to preprocess the data and convert it to the file format used in the paper (check "Data/D_original_dataset.csv" as a reference format). For the next steps, we use toy data to show the computations performed bye the two main parties: **researcher** and **verifier**.
+
 
 ## preprocess_dataset.py
 
@@ -63,7 +66,4 @@ python verifier_computations.py -i "Data/E_original_dataset.csv" -a "Data/E_case
 ```
 
 
-**
-Notes:
-Add which python version I'm using, along with the version package in requirements.txt file
-Put opensnp link somewhere (https://opensnp.org/phenotypes). **
+**Notes:Add which python version I'm using, along with the version package in requirements.txt file**
